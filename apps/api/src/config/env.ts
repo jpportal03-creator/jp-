@@ -2,9 +2,29 @@ import 'dotenv/config';
 
 type EnvSource = NodeJS.ProcessEnv;
 
+const diagnosticEnvNames = [
+  'DATABASE_URL',
+  'JWT_SECRET',
+  'AUTH_SECRET',
+  'APP_URL',
+  'WEB_ORIGINS',
+  'PAYMENT_WEBHOOK_SECRET',
+] as const;
+
+export function getEnvConfigDiagnostic(source: EnvSource = process.env) {
+  return Object.fromEntries(diagnosticEnvNames.map((name) => [name, Boolean(source[name]?.trim())])) as Record<(typeof diagnosticEnvNames)[number], boolean>;
+}
+
 const requiredInProduction = (source: EnvSource, name: string, fallback: string, isProduction: boolean) => {
   const value = source[name]?.trim() ?? '';
-  if (isProduction && (!value || value === fallback)) throw new Error(`${name} must be configured in production`);
+  if (isProduction && (!value || value === fallback)) {
+    if (source.ENV_CONFIG_DIAGNOSTICS === 'true') {
+      console.error('Production environment configuration status', getEnvConfigDiagnostic(source));
+    }
+
+    throw new Error(`${name} must be configured in production`);
+  }
+
   return value || fallback;
 };
 

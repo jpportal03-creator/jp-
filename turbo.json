@@ -7,7 +7,9 @@
     "AUTH_SECRET",
     "APP_URL",
     "WEB_ORIGINS",
-    "PAYMENT_WEBHOOK_SECRET"
+    "PAYMENT_WEBHOOK_SECRET",
+    "NEXT_PUBLIC_SITE_URL",
+    "NEXT_PUBLIC_API_URL"
   ],
   "tasks": {
     "build": {
