@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "jsx": "preserve",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "ignoreDeprecations": "5.0",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "@PROJECT_NAME/types": ["packages/types/src/index.ts"],
+      "@PROJECT_NAME/validation": ["packages/validation/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next"]
+}

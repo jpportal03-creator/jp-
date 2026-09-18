@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "../..",
+    "types": ["node"],
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "strict": true,
+    "noEmitOnError": true,
+    "ignoreDeprecations": "5.0",
+    "baseUrl": ".",
+    "paths": {
+      "@PROJECT_NAME/types": ["../../packages/types/src/index.ts"],
+      "@PROJECT_NAME/validation": ["../../packages/validation/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../packages/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

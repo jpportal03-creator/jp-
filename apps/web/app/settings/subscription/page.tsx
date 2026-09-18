@@ -1,0 +1,12 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+type State = { premium: boolean; subscription: { status: string; cancelAtPeriodEnd: boolean; endsAt: string | null; startedAt: string; plan: { name: string; priceInPaise: number; currency: string } } | null };
+export default function SubscriptionSettingsPage() {
+  const [state, setState] = useState<State | null>(null); const [message, setMessage] = useState('');
+  useEffect(() => { fetch(`${apiUrl}/api/v1/subscription/me`, { credentials: 'include' }).then((response) => response.json() as Promise<{ data: State }>).then((result) => setState(result.data)).catch(() => setMessage('Unable to load subscription.')); }, []);
+  async function cancel() { if (!state?.subscription) return; const response = await fetch(`${apiUrl}/api/v1/subscription/cancel`, { method: 'POST', credentials: 'include' }); setMessage(response.ok ? 'Renewal cancelled. Your paid access remains available until the expiry date.' : 'We could not cancel renewal.'); if (response.ok) setState({ ...state, subscription: { ...state.subscription, cancelAtPeriodEnd: true } }); }
+  return <main className="app-shell"><header className="topbar"><div><span className="eyebrow">Account settings</span><h1>Subscription</h1></div></header>{state?.subscription ? <section className="settings-card"><span className="eyebrow">{state.subscription.status}</span><h2>{state.subscription.plan.name} Premium</h2><p>Started {new Date(state.subscription.startedAt).toLocaleDateString()}</p><p>Access until {state.subscription.endsAt ? new Date(state.subscription.endsAt).toLocaleDateString() : 'your renewal date'}</p>{state.subscription.cancelAtPeriodEnd ? <p className="payment-message">Renewal is cancelled.</p> : <button className="secondary-button" onClick={() => void cancel()}>Cancel renewal</button>}</section> : <div className="state-panel page-state"><strong>No active subscription.</strong><p>Premium access will appear here after provider verification.</p><a className="primary-button" href="/premium">View plans</a></div>}{message && <p className="payment-message">{message}</p>}<a className="secondary-button" href="/payments">View payment history</a></main>;
+}

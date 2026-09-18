@@ -1,0 +1,3 @@
+export default function MessagesPage() {
+  return <main className="app-shell"><header className="topbar"><div><span className="eyebrow">Private conversations</span><h1>Messages</h1></div></header><div className="state-panel page-state"><strong>Chat is coming next.</strong><p>Your conversations will appear here after messaging launches.</p><a className="primary-button" href="/discover">Back to discovery</a></div><nav className="bottom-nav" aria-label="Main navigation"><a href="/discover">Discover</a><a href="/matches">Matches</a><a className="active" href="/messages">Messages</a><a href="/profile">Profile</a></nav></main>;
+}

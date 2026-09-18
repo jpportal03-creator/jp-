@@ -1,0 +1,3 @@
+export function LegalLayout({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
+  return <main className="app-shell legal-page"><header className="topbar"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1></div><a className="icon-button" href="/discover" aria-label="Back to discovery">×</a></header><article className="legal-copy">{children}</article><footer className="legal-footer"><a href="/legal/terms">Terms</a><a href="/legal/privacy">Privacy</a><a href="/legal/community">Community guidelines</a><a href="/legal/refunds">Refunds</a><a href="/legal/contact">Contact</a></footer></main>;
+}

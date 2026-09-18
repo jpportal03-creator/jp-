@@ -1,0 +1,409 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  student
+  admin
+  moderator
+}
+
+enum AccountStatus {
+  active
+  pending_verification
+  suspended
+  deleted
+}
+
+enum Discoverability {
+  discoverable
+  hidden
+  incognito
+}
+
+enum Gender {
+  woman
+  man
+  non_binary
+  prefer_not_to_say
+}
+
+enum ReportCategory {
+  harassment
+  spam
+  scam
+  fake_profile
+  inappropriate_content
+  impersonation
+  threatening_behavior
+  other
+}
+
+enum SubscriptionStatus {
+  active
+  pending
+  expired
+  cancelled
+  failed
+}
+
+model User {
+  id                    String          @id @default(uuid()) @db.Uuid
+  email                 String          @unique
+  passwordHash          String?
+  role                  UserRole        @default(student)
+  status                AccountStatus   @default(pending_verification)
+  emailVerifiedAt       DateTime?
+  collegeId             String?         @db.Uuid
+  college               College?        @relation(fields: [collegeId], references: [id])
+  profile               Profile?
+  sentMessages          Message[]       @relation("MessageSender")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  deletedAt             DateTime?
+
+  @@index([email])
+  @@index([collegeId])
+  @@index([status])
+}
+
+model College {
+  id            String          @id @default(uuid()) @db.Uuid
+  name          String
+  active        Boolean         @default(true)
+  verification  Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  domains       CollegeDomain[]
+  users         User[]
+  courses       Course[]
+  semesters     Semester[]
+  profiles      Profile[]
+
+  @@index([active])
+}
+
+model CollegeDomain {
+  id        String   @id @default(uuid()) @db.Uuid
+  collegeId String   @db.Uuid
+  college   College  @relation(fields: [collegeId], references: [id])
+  domain    String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([collegeId])
+  @@index([domain])
+}
+
+model Course {
+  id        String    @id @default(uuid()) @db.Uuid
+  collegeId String?   @db.Uuid
+  college   College?  @relation(fields: [collegeId], references: [id])
+  name      String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  profiles  Profile[]
+
+  @@index([collegeId])
+  @@index([active])
+}
+
+model Semester {
+  id        String    @id @default(uuid()) @db.Uuid
+  collegeId String?   @db.Uuid
+  college   College?  @relation(fields: [collegeId], references: [id])
+  name      String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  profiles  Profile[]
+
+  @@index([collegeId])
+  @@index([active])
+}
+
+model Profile {
+  id              String          @id @default(uuid()) @db.Uuid
+  userId          String          @unique @db.Uuid
+  user            User            @relation(fields: [userId], references: [id])
+  displayName     String
+  collegeId       String?         @db.Uuid
+  college         College?        @relation(fields: [collegeId], references: [id])
+  courseId        String?         @db.Uuid
+  course          Course?         @relation(fields: [courseId], references: [id])
+  semesterId      String?         @db.Uuid
+  semester        Semester?       @relation(fields: [semesterId], references: [id])
+  gender          Gender?
+  bio             String?
+  profilePhotoUrl String?
+  interests       String[]
+  boostPriority   Int             @default(0)
+  discoverability Discoverability @default(discoverable)
+  privacySettings Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([collegeId])
+  @@index([courseId])
+  @@index([semesterId])
+  @@index([discoverability])
+  @@index([gender])
+}
+
+model EmailVerification {
+  id         String    @id @default(uuid()) @db.Uuid
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Session {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  refreshToken  String    @unique
+  userAgent     String?
+  ipHash        String?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LikeRecord {
+  id         String   @id @default(uuid()) @db.Uuid
+  fromUserId String   @db.Uuid
+  toUserId   String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+model PassRecord {
+  id         String   @id @default(uuid()) @db.Uuid
+  fromUserId String   @db.Uuid
+  toUserId   String   @db.Uuid
+  createdAt  DateTime @default(now())
+
+  @@unique([fromUserId, toUserId])
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+model Match {
+  id            String    @id @default(uuid()) @db.Uuid
+  userAId       String    @db.Uuid
+  userBId       String    @db.Uuid
+  status        String    @default("active")
+  createdAt     DateTime  @default(now())
+  lastActivityAt DateTime? @default(now())
+  messages       Message[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+  @@index([status])
+}
+
+model Message {
+  id               String    @id @default(uuid()) @db.Uuid
+  matchId          String    @db.Uuid
+  senderId         String    @db.Uuid
+  body             String
+  clientMessageId  String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  editedAt         DateTime?
+  deletedAt        DateTime?
+  readAt           DateTime?
+  match            Match     @relation(fields: [matchId], references: [id])
+  sender           User      @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([matchId, createdAt])
+  @@index([senderId, createdAt])
+  @@unique([senderId, clientMessageId])
+}
+
+model Block {
+  id           String   @id @default(uuid()) @db.Uuid
+  blockerUserId String   @db.Uuid
+  blockedUserId String   @db.Uuid
+  createdAt    DateTime @default(now())
+
+  @@unique([blockerUserId, blockedUserId])
+  @@index([blockerUserId])
+  @@index([blockedUserId])
+}
+
+model Report {
+  id             String        @id @default(uuid()) @db.Uuid
+  reporterUserId String        @db.Uuid
+  reportedUserId String?       @db.Uuid
+  messageId      String?       @db.Uuid
+  category       ReportCategory
+  reason         String?
+  status         String        @default("pending")
+  createdAt      DateTime      @default(now())
+
+  @@index([status])
+  @@index([category])
+  @@index([reporterUserId])
+  @@index([reportedUserId])
+}
+
+model SubscriptionPlan {
+  id          String              @id @default(uuid()) @db.Uuid
+  code        String              @unique
+  name        String
+  description String?
+  durationDays Int
+  priceInPaise Int
+  currency    String              @default("INR")
+  interval    String              @default("month")
+  active      Boolean             @default(true)
+  features    Json?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  subscriptions Subscription[]
+  @@index([active])
+}
+
+model Subscription {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @db.Uuid
+  planId      String              @db.Uuid
+  plan        SubscriptionPlan    @relation(fields: [planId], references: [id])
+  payments    Payment[]
+  provider    String              @default("sandbox")
+  providerSubscriptionId String?
+  status      SubscriptionStatus  @default(pending)
+  startedAt   DateTime            @default(now())
+  endsAt      DateTime?
+  cancelledAt DateTime?
+  cancelAtPeriodEnd Boolean       @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([endsAt])
+}
+
+model Payment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @db.Uuid
+  subscriptionId      String?  @db.Uuid
+  subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
+  boost              ProfileBoost?
+  provider            String
+  providerPaymentId   String?
+  providerOrderId     String?
+  amountInPaise       Int
+  currency            String   @default("INR")
+  status              String   @default("pending")
+  metadata            Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([providerPaymentId])
+  @@index([providerOrderId])
+}
+
+model PaymentEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  paymentId     String   @db.Uuid
+  providerEventId String  @unique
+  eventType     String
+  providerStatus String?
+  payload       Json?
+  processedAt   DateTime @default(now())
+
+  @@index([paymentId])
+  @@index([eventType])
+}
+
+model ProfileBoost {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  paymentId   String   @unique @db.Uuid
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+  startedAt   DateTime?
+  expiresAt   DateTime?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  @@index([userId, status, expiresAt])
+  @@index([expiresAt])
+}
+
+model Notification {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  type        String
+  title       String
+  body        String
+  payload     Json?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([type])
+}
+
+model NotificationPreference {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @unique @db.Uuid
+  newMatchEnabled     Boolean  @default(true)
+  newMessageEnabled   Boolean  @default(true)
+  accountEnabled      Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model PushSubscription {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  endpoint    String   @unique
+  subscription Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model AdminUser {
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  passwordHash String
+  role        String   @default("admin")
+  createdAt   DateTime @default(now())
+}
+
+model AdminAction {
+  id            String   @id @default(uuid()) @db.Uuid
+  adminUserId   String   @db.Uuid
+  actionType    String
+  targetUserId  String?  @db.Uuid
+  details       Json?
+  createdAt     DateTime @default(now())
+
+  @@index([adminUserId])
+  @@index([targetUserId])
+}

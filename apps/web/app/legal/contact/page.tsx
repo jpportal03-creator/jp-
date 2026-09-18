@@ -1,0 +1,2 @@
+import { LegalLayout } from '../LegalLayout';
+export default function ContactPage() { return <LegalLayout eyebrow="Need help?" title="Contact"><p>For account, safety, privacy, or payment support, configure the official support address before launch.</p><p className="contact-placeholder">Support contact: support@example.com</p><p>JP Dating is independently operated and is not affiliated with or endorsed by any university unless explicitly stated.</p></LegalLayout>; }
