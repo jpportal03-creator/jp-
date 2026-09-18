@@ -28,5 +28,6 @@
     "@fastify/helmet": "^13.1.1",
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/websocket": "^11.3.0"
-  }
+  },
+  "packageManager": "npm@11.12.1"
 }
