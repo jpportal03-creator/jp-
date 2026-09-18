@@ -6,7 +6,8 @@
     "JWT_SECRET",
     "AUTH_SECRET",
     "APP_URL",
-    "WEB_ORIGINS"
+    "WEB_ORIGINS",
+    "PAYMENT_WEBHOOK_SECRET"
   ],
   "tasks": {
     "build": {
