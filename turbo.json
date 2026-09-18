@@ -4,7 +4,8 @@
   "globalEnv": [
     "DATABASE_URL",
     "JWT_SECRET",
-    "AUTH_SECRET"
+    "AUTH_SECRET",
+    "APP_URL"
   ],
   "tasks": {
     "build": {
