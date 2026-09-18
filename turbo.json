@@ -1,14 +1,15 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*"],
+  "globalEnv": [
+    "DATABASE_URL",
+    "JWT_SECRET",
+    "AUTH_SECRET"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "env": [
-        "DATABASE_URL",
-        "JWT_SECRET"
-      ]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]
