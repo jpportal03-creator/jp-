@@ -1,6 +1,7 @@
 import 'dotenv/config';
 
 type EnvSource = NodeJS.ProcessEnv;
+const productionFrontendOrigin = 'https://jp-dating-frontend.onrender.com';
 
 const diagnosticEnvNames = [
   'DATABASE_URL',
@@ -63,7 +64,11 @@ export function createEnv(source: EnvSource = process.env) {
     REDIS_URL: source.REDIS_URL ?? 'redis://localhost:6379',
     ADMIN_EMAIL: source.ADMIN_EMAIL ?? 'admin@localhost',
     ADMIN_PASSWORD: source.ADMIN_PASSWORD ?? 'change-me',
-    WEB_ORIGINS: resolveWebOrigins(source.WEB_ORIGINS, appUrl, isProduction),
+    WEB_ORIGINS: resolveWebOrigins(
+      [source.WEB_ORIGINS, isProduction ? productionFrontendOrigin : undefined].filter(Boolean).join(','),
+      appUrl,
+      isProduction,
+    ),
     PAYMENT_PROVIDER: source.PAYMENT_PROVIDER ?? 'sandbox',
     PAYMENT_KEY_ID: source.PAYMENT_KEY_ID ?? '',
     PAYMENT_KEY_SECRET: source.PAYMENT_KEY_SECRET ?? '',

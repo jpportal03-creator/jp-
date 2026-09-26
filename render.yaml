@@ -31,7 +31,7 @@ services:
       - key: APP_URL
         sync: false
       - key: WEB_ORIGINS
-        sync: false
+        value: https://jp-dating-frontend.onrender.com
 
   - type: web
     name: jp-dating-web

@@ -48,11 +48,11 @@ describe('environment configuration', () => {
     expect(createEnv(productionEnv).PAYMENT_WEBHOOK_SECRET).toBe(productionEnv.PAYMENT_WEBHOOK_SECRET);
   });
 
-  it('uses APP_URL as the production WEB_ORIGINS fallback', () => {
+  it('uses the deployed frontend as the production WEB_ORIGINS fallback', () => {
     const source: NodeJS.ProcessEnv = { ...productionEnv };
     delete source.WEB_ORIGINS;
 
-    expect(createEnv(source).WEB_ORIGINS).toBe(productionEnv.APP_URL);
+    expect(createEnv(source).WEB_ORIGINS).toBe('https://jp-dating-frontend.onrender.com');
   });
 
   it('uses a local payment webhook secret outside production', () => {

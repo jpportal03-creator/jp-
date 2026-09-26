@@ -35,6 +35,10 @@ export async function createApp() {
   await app.register(cors, {
     origin: env.WEB_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    preflight: true,
+    optionsSuccessStatus: 204,
   });
 
   await app.register(rateLimit, {
