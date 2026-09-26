@@ -10,7 +10,7 @@ const DEFAULT_PLANS = [
 
 const DEFAULT_COLLEGE = {
   name: 'JP Institute of Technology',
-  domains: ['gmail.com', 'yahoo.com', 'outlook.com', 'jp.edu', 'example.edu'],
+  domains: ['mail.jiit.ac.in'],
   courses: ['Computer Science & Engineering', 'Information Technology', 'Business Administration', 'Electronics & Communication', 'Mechanical Engineering'],
   semesters: ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'],
 };
@@ -44,6 +44,14 @@ async function main() {
   console.log(`✓ College "${college.name}" ensured (${college.id})`);
 
   // 3. Seed College Domains
+  await prisma.collegeDomain.updateMany({
+    where: {
+      collegeId: college.id,
+      domain: { notIn: DEFAULT_COLLEGE.domains },
+    },
+    data: { active: false },
+  });
+
   for (const domain of DEFAULT_COLLEGE.domains) {
     await prisma.collegeDomain.upsert({
       where: { domain },
