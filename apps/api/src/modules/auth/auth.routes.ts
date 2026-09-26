@@ -1,10 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 
 import { successResponse, errorResponse } from '../../lib/api-response';
+import { logger } from '../../lib/logger';
 import { prisma } from '../../lib/prisma';
 import { ensureDomainMatchesCollege, createUserWithEmail, verifyPassword, getSessionUserIdFromRequest, setSessionCookie, clearSessionCookie } from './auth.service';
 import { registerSchema, loginSchema, verifyEmailSchema } from './auth.validators';
-import { createEmailVerification, verifyEmailCode } from './email-verification.service';
+import { createEmailVerification, sendVerificationEmail, verifyEmailCode } from './email-verification.service';
 
 export async function authRoutes(app: FastifyInstance) {
   app.get('/api/v1/auth/session', async (request) => {
@@ -51,7 +52,14 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const user = await createUserWithEmail(email, password);
-    await createEmailVerification(email);
+    const { code } = await createEmailVerification(email);
+    try {
+      await sendVerificationEmail(email, code);
+    } catch (error) {
+      logger.error({ err: error, event: 'verification_email_send_failed' }, 'Registration email delivery failed');
+      reply.code(503);
+      return errorResponse('EMAIL_DELIVERY_FAILED', 'We could not send the verification email. Please try again later.');
+    }
 
     return successResponse({
       userId: user.id,
