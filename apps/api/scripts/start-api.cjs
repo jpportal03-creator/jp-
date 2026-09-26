@@ -38,6 +38,7 @@ if (statusOutput.includes(failedMigration) && /failed/i.test(statusOutput)) {
 }
 
 run(prismaCommand, ['--no-install', 'prisma', 'migrate', 'deploy', '--schema', schemaPath]);
+run(prismaCommand, ['--no-install', 'prisma', 'db', 'seed']);
 
 const api = spawnSync(process.execPath, [path.resolve(__dirname, '../dist/apps/api/src/main.js')], {
   cwd: path.resolve(__dirname, '..'),
