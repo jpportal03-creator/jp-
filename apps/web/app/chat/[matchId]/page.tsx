@@ -1,10 +1,10 @@
 'use client';
+import { apiUrl } from '@/lib/config';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 
 type Message = { id: string; senderId: string; body: string; clientMessageId: string; createdAt: string; readAt: string | null; deletedAt: string | null; pending?: boolean; failed?: boolean };
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 const socketUrl = apiUrl.replace(/^http/, 'ws');
 
 export default function ChatPage() {
@@ -19,7 +19,7 @@ export default function ChatPage() {
   const socketRef = useRef<WebSocket | null>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function loadMessages(nextCursor: string | null = null) {
+  const loadMessages = useCallback(async (nextCursor: string | null = null) => {
     const query = nextCursor ? `?cursor=${nextCursor}&limit=25` : '?limit=25';
     const response = await fetch(`${apiUrl}/api/v1/matches/${matchId}/messages${query}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Match unavailable');
@@ -29,7 +29,7 @@ export default function ChatPage() {
     setHasMore(result.data.hasMore);
     const last = result.data.items.at(-1);
     if (last) void fetch(`${apiUrl}/api/v1/messages/${last.id}/read`, { method: 'POST', credentials: 'include' });
-  }
+  }, [matchId]);
 
   useEffect(() => {
     void loadMessages().catch(() => setStatus('Match unavailable'));
@@ -47,7 +47,7 @@ export default function ChatPage() {
       if (message.type === 'stop_typing') setTyping(false);
     };
     return () => { socket.close(); if (typingTimer.current) clearTimeout(typingTimer.current); };
-  }, [matchId]);
+  }, [loadMessages, matchId]);
 
   function updateBody(value: string) {
     setBody(value);

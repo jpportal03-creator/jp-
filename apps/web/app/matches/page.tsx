@@ -1,8 +1,8 @@
 'use client';
+import { apiUrl } from '@/lib/config';
 
 import { useEffect, useState } from 'react';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 type Match = { id: string; createdAt: string; lastActivityAt: string | null; unreadCount: number; latestMessage: { body: string; createdAt: string } | null; profile: { displayName: string; profilePhotoUrl: string | null } };
 
 export default function MatchesPage() {

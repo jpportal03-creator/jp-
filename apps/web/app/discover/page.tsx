@@ -1,4 +1,5 @@
 'use client';
+import { apiUrl } from '@/lib/config';
 
 import { useEffect, useState } from 'react';
 
@@ -16,7 +17,6 @@ type Profile = {
 };
 
 type DiscoveryResponse = { items: Profile[]; nextCursor: string | null; hasMore: boolean };
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export default function DiscoverPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);

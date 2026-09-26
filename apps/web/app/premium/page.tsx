@@ -1,8 +1,8 @@
 'use client';
+import { apiUrl } from '@/lib/config';
 
 import { useEffect, useState } from 'react';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 type Plan = { code: string; name: string; description: string | null; durationDays: number; priceInPaise: number; currency: string; interval: string };
 type SubscriptionState = { premium: boolean; subscription: { status: string; endsAt: string | null; plan: Plan } | null };
 

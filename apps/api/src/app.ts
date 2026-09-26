@@ -7,6 +7,7 @@ import websocket from '@fastify/websocket';
 
 import { env } from './config/env';
 import { logger } from './lib/logger';
+import { prisma } from './lib/prisma';
 import { successResponse, errorResponse } from './lib/api-response';
 import { authRoutes } from './modules/auth/auth.routes';
 import { profileRoutes } from './modules/profiles/profile.routes';
@@ -52,8 +53,15 @@ export async function createApp() {
   await app.register(realtimeRoutes);
   await app.register(paymentRoutes);
 
-  app.get('/health', async () => {
-    return successResponse({ status: 'ok', timestamp: new Date().toISOString() });
+  app.get('/health', async (_request, reply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return successResponse({ status: 'ok', timestamp: new Date().toISOString() });
+    } catch (error) {
+      logger.error({ err: error }, 'Health check database query failed');
+      reply.code(503);
+      return errorResponse('DATABASE_UNAVAILABLE', 'Database is unavailable');
+    }
   });
 
   app.setNotFoundHandler(async (_req, reply) => {
@@ -108,6 +116,6 @@ export async function createApp() {
 export async function startServer() {
   const app = await createApp();
   await app.listen({ port: env.PORT, host: '0.0.0.0' });
-  logger.info(`API listening on http://localhost:${env.PORT}`);
+  logger.info({ port: env.PORT }, 'API listening');
   return app;
 }

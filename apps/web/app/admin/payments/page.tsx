@@ -1,8 +1,8 @@
 'use client';
+import { apiUrl } from '@/lib/config';
 
 import { useEffect, useState } from 'react';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 type Overview = { successfulPayments: number; grossAmountInPaise: number; activePremiumUsers: number; boostsPurchased: number; failedPayments: number };
 const money = (value: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value / 100);
 

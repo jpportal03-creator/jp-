@@ -1,8 +1,8 @@
 'use client';
+import { apiUrl } from '@/lib/config';
 
 import { useEffect, useState } from 'react';
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 type State = { premium: boolean; subscription: { status: string; cancelAtPeriodEnd: boolean; endsAt: string | null; startedAt: string; plan: { name: string; priceInPaise: number; currency: string } } | null };
 export default function SubscriptionSettingsPage() {
   const [state, setState] = useState<State | null>(null); const [message, setMessage] = useState('');

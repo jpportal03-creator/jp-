@@ -1,7 +1,7 @@
 'use client';
+import { apiUrl } from '@/lib/config';
 
 import { useEffect, useState } from 'react';
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 type Notification = { id: string; title: string; body: string; readAt: string | null; createdAt: string };
 export default function NotificationsPage() {
   const [items, setItems] = useState<Notification[]>([]);
