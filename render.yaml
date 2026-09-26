@@ -11,7 +11,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm ci && npm run build:api
-    preDeployCommand: npm run db:deploy && npm run db:seed
+    preDeployCommand: FAILED_MIGRATION=20260918000000_init; STATUS="$(npx prisma migrate status --schema=apps/api/prisma/schema.prisma 2>&1 || true)"; printf '%s\n' "$STATUS"; if printf '%s\n' "$STATUS" | grep -Fqi 'failed' && printf '%s\n' "$STATUS" | grep -Fq "$FAILED_MIGRATION"; then npx prisma migrate resolve --rolled-back "$FAILED_MIGRATION" --schema=apps/api/prisma/schema.prisma; fi; npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma && npm run db:seed
     startCommand: npm run start:api
     envVars:
       - key: NODE_ENV
