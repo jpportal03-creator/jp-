@@ -29,21 +29,24 @@ const requiredInProduction = (source: EnvSource, name: string, fallback: string,
 };
 
 export function resolveWebOrigins(webOrigins: string | undefined, appUrl: string, isProduction = false) {
-  const value = webOrigins?.trim() || appUrl;
-  const origins = value.split(',').map((origin) => origin.trim()).filter(Boolean);
+  const value = webOrigins?.trim() || appUrl.trim();
+  const rawOrigins = value.split(',').map((origin) => origin.trim()).filter(Boolean);
 
-  if (isProduction && origins.length === 0) throw new Error('WEB_ORIGINS must be configured in production');
+  if (isProduction && rawOrigins.length === 0) throw new Error('WEB_ORIGINS must be configured in production');
 
-  for (const origin of origins) {
+  const normalizedOrigins: string[] = [];
+  for (const rawOrigin of rawOrigins) {
+    const origin = rawOrigin.replace(/\/+$/, '');
     try {
       const url = new URL(origin);
       if (url.origin !== origin || !['http:', 'https:'].includes(url.protocol)) throw new Error('Invalid origin');
+      normalizedOrigins.push(url.origin);
     } catch {
-      throw new Error(`WEB_ORIGINS contains an invalid origin: ${origin}`);
+      throw new Error(`WEB_ORIGINS contains an invalid origin: ${rawOrigin}`);
     }
   }
 
-  return origins.join(',');
+  return Array.from(new Set(normalizedOrigins)).join(',');
 }
 
 export function createEnv(source: EnvSource = process.env) {

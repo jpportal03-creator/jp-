@@ -74,11 +74,12 @@ export async function setSessionCookie(reply: { setCookie: (name: string, value:
   const token = createSessionToken(userId);
   await prisma.session.create({ data: { userId, refreshToken: hashSessionToken(token), expiresAt: new Date(Date.now() + 7 * 86400000) } });
 
+  const isProduction = env.NODE_ENV === 'production';
   reply.setCookie('sessionToken', token, {
     path: '/',
     httpOnly: true,
-    sameSite: 'lax',
-    secure: env.NODE_ENV === 'production',
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
     maxAge: 60 * 60 * 24 * 7,
   });
 
@@ -88,7 +89,12 @@ export async function setSessionCookie(reply: { setCookie: (name: string, value:
 export async function clearSessionCookie(request: AuthSessionRequest, reply: { clearCookie: (name: string, options: Record<string, unknown>) => void }) {
   const token = request.cookies?.sessionToken;
   if (token) await prisma.session.updateMany({ where: { refreshToken: hashSessionToken(token), revokedAt: null }, data: { revokedAt: new Date() } });
+
+  const isProduction = env.NODE_ENV === 'production';
   reply.clearCookie('sessionToken', {
     path: '/',
+    httpOnly: true,
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
   });
 }

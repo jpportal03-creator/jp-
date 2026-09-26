@@ -33,6 +33,10 @@ describe('environment configuration', () => {
     expect(() => resolveWebOrigins('https://app.example/path', 'https://fallback.example')).toThrow('WEB_ORIGINS contains an invalid origin');
   });
 
+  it('accepts and normalizes origins with trailing slashes', () => {
+    expect(resolveWebOrigins('https://app.example/', 'https://fallback.example')).toBe('https://app.example');
+  });
+
   it.each(requiredProductionVariables)('fails clearly in production when %s is missing', (name) => {
     const source: NodeJS.ProcessEnv = { ...productionEnv };
     delete source[name];
