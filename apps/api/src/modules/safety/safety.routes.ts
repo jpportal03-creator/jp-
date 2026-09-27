@@ -20,6 +20,16 @@ async function getAuthenticatedUserId(request: { cookies?: Record<string, string
 }
 
 export async function safetyRoutes(app: FastifyInstance) {
+  app.get('/api/v1/blocks', async (request, reply) => {
+    const userId = await getAuthenticatedUserId(request);
+    if (!userId) { reply.code(401); return errorResponse('UNAUTHORIZED', 'Unauthorized'); }
+
+    const blocks = await prisma.block.findMany({ where: { blockerUserId: userId }, orderBy: { createdAt: 'desc' }, select: { blockedUserId: true, createdAt: true } });
+    const profiles = await prisma.profile.findMany({ where: { userId: { in: blocks.map((block) => block.blockedUserId) } }, select: { userId: true, displayName: true, profilePhotoUrl: true } });
+    const profileByUserId = new Map(profiles.map((profile) => [profile.userId, profile]));
+    return successResponse({ items: blocks.map((block) => ({ userId: block.blockedUserId, blockedAt: block.createdAt, profile: profileByUserId.get(block.blockedUserId) ?? null })) });
+  });
+
   app.post('/api/v1/blocks', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (request, reply) => {
     const userId = await getAuthenticatedUserId(request);
     const parsed = targetSchema.safeParse(request.body);

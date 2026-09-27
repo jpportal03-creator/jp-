@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import { isProfileComplete } from '../profiles/profile-completeness';
+import { toPublicProfile } from '../profiles/public-profile';
 
 export type DiscoveryCursor = string | null;
 
@@ -17,6 +18,24 @@ export type DiscoveryEligibility = {
   lookingFor: string | null;
   interests: string[];
 };
+
+export function getMutualPreferenceFilter(profile: { gender: string; interestedIn: 'men' | 'women' | 'everyone' }) {
+  const acceptedGenders = profile.interestedIn === 'men'
+    ? ['man']
+    : profile.interestedIn === 'women'
+      ? ['woman']
+      : undefined;
+  const acceptedPreferences = profile.gender === 'man'
+    ? ['men', 'everyone']
+    : profile.gender === 'woman'
+      ? ['women', 'everyone']
+      : ['everyone'];
+
+  return {
+    ...(acceptedGenders ? { gender: { in: acceptedGenders } } : {}),
+    interestedIn: { in: acceptedPreferences },
+  };
+}
 
 export function isDiscoveryProfileEligible(profile: DiscoveryEligibility, currentUserId: string, excludedUserIds: Set<string>) {
   return profile.userId !== currentUserId
@@ -71,8 +90,12 @@ export async function getDiscoveryProfiles(userId: string, cursor: DiscoveryCurs
 
   const currentProfile = await prisma.profile.findUnique({
     where: { userId },
-    select: { collegeId: true, courseId: true, semesterId: true, gender: true },
+    select: { collegeId: true, courseId: true, semesterId: true, gender: true, interestedIn: true },
   });
+
+  const preferenceFilter = currentProfile?.interestedIn && currentProfile.gender
+    ? getMutualPreferenceFilter({ gender: currentProfile.gender, interestedIn: currentProfile.interestedIn })
+    : {};
 
   const query: {
     where: Record<string, unknown>;
@@ -91,12 +114,12 @@ export async function getDiscoveryProfiles(userId: string, cursor: DiscoveryCurs
       displayName: { not: '' },
       collegeId: { not: null },
       courseId: { not: null },
-      academicYear: { not: null },
+      academicYear: { in: [1, 2, 3, 4] },
       age: { gte: 18 },
       gender: { not: null },
-      interestedIn: { not: null },
       lookingFor: { not: null },
       interests: { isEmpty: false },
+      ...preferenceFilter,
       ...(currentProfile?.collegeId ? { collegeId: currentProfile.collegeId } : {}),
       ...(currentProfile?.courseId ? { courseId: currentProfile.courseId } : {}),
       ...(currentProfile?.semesterId ? { semesterId: currentProfile.semesterId } : {}),
@@ -122,19 +145,7 @@ export async function getDiscoveryProfiles(userId: string, cursor: DiscoveryCurs
   const page = profiles.slice(0, pageSize);
 
   return {
-    items: page.map((profile) => ({
-      id: profile.id,
-      userId: profile.userId,
-      displayName: profile.displayName,
-      bio: profile.bio,
-      gender: profile.gender,
-      discoverability: profile.discoverability,
-      college: profile.college,
-      course: profile.course,
-      semester: profile.semester,
-      profilePhotoUrl: profile.profilePhotoUrl,
-      interests: profile.interests,
-    })),
+    items: page.map((profile) => toPublicProfile(profile)),
     nextCursor,
     hasMore,
   };

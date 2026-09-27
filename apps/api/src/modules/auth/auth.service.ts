@@ -24,7 +24,7 @@ export async function ensureDomainMatchesCollege(email: string) {
 }
 
 export async function createUserWithEmail(email: string, password: string) {
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await hashPassword(password);
 
   const user = await prisma.user.create({
     data: {
@@ -35,6 +35,10 @@ export async function createUserWithEmail(email: string, password: string) {
   });
 
   return user;
+}
+
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 12);
 }
 
 export async function verifyPassword(candidate: string, passwordHash: string) {

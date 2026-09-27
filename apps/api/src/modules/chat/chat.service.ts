@@ -1,4 +1,6 @@
 import { prisma } from '../../lib/prisma';
+import { toPublicProfile } from '../profiles/public-profile';
+import { getVisibleMatchUserIds } from '../matching/match-visibility';
 
 export async function getActiveMatchForUser(matchId: string, userId: string) {
   const match = await prisma.match.findFirst({ where: { id: matchId, status: 'active', OR: [{ userAId: userId }, { userBId: userId }] } });
@@ -13,15 +15,18 @@ export async function getActiveMatchForUser(matchId: string, userId: string) {
 const messageSelect = { id: true, matchId: true, senderId: true, body: true, clientMessageId: true, createdAt: true, updatedAt: true, editedAt: true, deletedAt: true, readAt: true } as const;
 
 export async function getMatchedUsersForUser(userId: string) {
-  const rows = await prisma.match.findMany({ where: { OR: [{ userAId: userId }, { userBId: userId }], status: 'active' }, orderBy: { lastActivityAt: 'desc' }, select: { id: true, userAId: true, userBId: true, lastActivityAt: true, createdAt: true, messages: { orderBy: { createdAt: 'desc' }, take: 1, select: messageSelect } } });
+  const rows = await prisma.match.findMany({ where: { OR: [{ userAId: userId }, { userBId: userId }], status: 'active' }, orderBy: { lastActivityAt: 'desc' }, select: { id: true, userAId: true, userBId: true, lastActivityAt: true, createdAt: true, messages: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' }, take: 1, select: messageSelect } } });
   const otherUserIds = rows.map((row) => row.userAId === userId ? row.userBId : row.userAId);
-  const profiles = await prisma.profile.findMany({ where: { userId: { in: otherUserIds } }, select: { userId: true, displayName: true, profilePhotoUrl: true } });
+  const visibleUserIds = await getVisibleMatchUserIds(userId, otherUserIds);
+  const visibleRows = rows.filter((row) => visibleUserIds.has(row.userAId === userId ? row.userBId : row.userAId));
+  const visibleOtherUserIds = visibleRows.map((row) => row.userAId === userId ? row.userBId : row.userAId);
+  const profiles = await prisma.profile.findMany({ where: { userId: { in: visibleOtherUserIds } }, select: { id: true, userId: true, displayName: true, age: true, academicYear: true, gender: true, bio: true, profilePhotoUrl: true, interests: true, privacySettings: true, college: { select: { id: true, name: true } }, course: { select: { name: true } }, semester: { select: { name: true } } } });
   const profileByUserId = new Map(profiles.map((profile) => [profile.userId, profile]));
-  return Promise.all(rows.map(async (row) => {
+  return Promise.all(visibleRows.map(async (row) => {
     const otherUserId = row.userAId === userId ? row.userBId : row.userAId;
     const profile = profileByUserId.get(otherUserId);
     const unreadCount = await prisma.message.count({ where: { matchId: row.id, senderId: { not: userId }, readAt: null, deletedAt: null } });
-    return profile ? { id: row.id, createdAt: row.createdAt, lastActivityAt: row.lastActivityAt, profile, latestMessage: row.messages[0] ?? null, unreadCount } : null;
+    return profile ? { id: row.id, createdAt: row.createdAt, lastActivityAt: row.lastActivityAt, profile: toPublicProfile(profile), latestMessage: row.messages[0] ?? null, unreadCount } : null;
   })).then((items) => items.filter((item): item is NonNullable<typeof item> => item !== null));
 }
 

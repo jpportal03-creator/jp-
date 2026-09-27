@@ -1,6 +1,7 @@
 'use client';
 
 import { apiUrl } from '@/lib/config';
+import AppNavigation from '../../components/AppNavigation';
 import { FormEvent, useEffect, useState } from 'react';
 
 const interestOptions = [
@@ -53,13 +54,14 @@ const emptyForm: SetupForm = {
   interestedIn: '', lookingFor: '', interests: [], bio: '', profilePhotoUrl: '',
 };
 
-export default function ProfileSetupPage() {
+export default function ProfileSetupPage({ mode = 'setup' }: { mode?: 'setup' | 'edit' }) {
   const [form, setForm] = useState<SetupForm>(emptyForm);
   const [colleges, setColleges] = useState<CollegeOption[]>([]);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     async function loadSetup() {
@@ -96,7 +98,8 @@ export default function ProfileSetupPage() {
           });
         }
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : 'Unable to load profile setup.');
+        setError('We could not load profile setup. Check your connection and try again.');
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -150,7 +153,7 @@ export default function ProfileSetupPage() {
       });
       const result = await response.json() as { error?: { message: string } };
       if (!response.ok) throw new Error(result.error?.message ?? 'Unable to save your profile.');
-      window.location.href = '/discovery';
+      window.location.href = mode === 'edit' ? '/profile' : '/discovery';
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to save your profile.');
     } finally {
@@ -159,13 +162,14 @@ export default function ProfileSetupPage() {
   }
 
   if (loading) return <main className="setup-page"><p className="setup-loading">Loading your profile setup…</p></main>;
+  if (loadError) return <main className="setup-page"><header className="setup-heading"><span className="eyebrow">Your profile</span><h1>Profile setup unavailable.</h1><p>{error}</p></header><div className="state-panel"><button className="primary-button" onClick={() => window.location.reload()}>Try again</button></div>{mode === 'edit' && <AppNavigation />}</main>;
 
   return (
     <main className="setup-page">
       <header className="setup-heading">
         <span className="eyebrow">Your profile</span>
-        <h1>Set the tone.</h1>
-        <p>Start with what matters. You can update these details later.</p>
+        <h1>{mode === 'edit' ? 'Your details.' : 'Set the tone.'}</h1>
+        <p>{mode === 'edit' ? 'Update the details people see about you.' : 'Start with what matters. You can update these details later.'}</p>
       </header>
       <section className="setup-panel" aria-labelledby="setup-step-title">
         <div className="setup-progress-row">
@@ -202,10 +206,11 @@ export default function ProfileSetupPage() {
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="setup-actions">
             {step > 1 && <button className="secondary-button" type="button" onClick={() => { setError(''); setStep((current) => current - 1); }}>Back</button>}
-            {step < 3 ? <button className="primary-button" type="button" onClick={continueStep}>Continue</button> : <button className="primary-button" type="submit" disabled={busy || form.interests.length === 0}>{busy ? 'Saving…' : 'Save and discover'}</button>}
+            {step < 3 ? <button className="primary-button" type="button" onClick={continueStep}>Continue</button> : <button className="primary-button" type="submit" disabled={busy || form.interests.length === 0}>{busy ? 'Saving…' : mode === 'edit' ? 'Save profile' : 'Save and discover'}</button>}
           </div>
         </form>
       </section>
+      {mode === 'edit' && <AppNavigation />}
     </main>
   );
 }

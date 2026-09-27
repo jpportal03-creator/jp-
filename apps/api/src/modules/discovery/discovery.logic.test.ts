@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isDiscoveryProfileEligible } from './discovery.service';
+import { getMutualPreferenceFilter, isDiscoveryProfileEligible } from './discovery.service';
 
 const eligible = {
   userId: 'profile-user',
@@ -34,5 +34,15 @@ describe('discovery eligibility', () => {
   it('does not allow incomplete profiles into Discovery', () => {
     expect(isDiscoveryProfileEligible({ ...eligible, interestedIn: null }, 'current-user', new Set())).toBe(false);
     expect(isDiscoveryProfileEligible({ ...eligible, interests: [] }, 'current-user', new Set())).toBe(false);
+  });
+
+  it('filters Discovery candidates by mutual dating preferences', () => {
+    expect(getMutualPreferenceFilter({ gender: 'woman', interestedIn: 'men' })).toEqual({
+      gender: { in: ['man'] },
+      interestedIn: { in: ['women', 'everyone'] },
+    });
+    expect(getMutualPreferenceFilter({ gender: 'non_binary', interestedIn: 'everyone' })).toEqual({
+      interestedIn: { in: ['everyone'] },
+    });
   });
 });

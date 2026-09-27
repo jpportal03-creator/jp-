@@ -1,4 +1,6 @@
 import { prisma } from '../../lib/prisma';
+import { isProfileComplete } from '../profiles/profile-completeness';
+import { areDatingPreferencesCompatible } from '../profiles/profile-compatibility';
 
 export function normalizeMatchUsers(a: string, b: string) {
   const sorted = [a, b].sort();
@@ -10,32 +12,31 @@ export function createLikeKey(a: string, b: string) {
   return `${sorted[0]}:${sorted[1]}`;
 }
 
+async function assertInteractionAllowed(fromUserId: string, targetUserId: string) {
+  const [fromUser, targetUser] = await Promise.all([
+    prisma.user.findUnique({ where: { id: fromUserId }, include: { profile: true } }),
+    prisma.user.findUnique({ where: { id: targetUserId }, include: { profile: true } }),
+  ]);
+
+  if (!fromUser || fromUser.status !== 'active' || !isProfileComplete(fromUser.profile)
+    || !targetUser || targetUser.status !== 'active' || !isProfileComplete(targetUser.profile)
+    || targetUser.profile?.discoverability === 'hidden'
+    || !areDatingPreferencesCompatible(fromUser.profile!, targetUser.profile!)) {
+    throw new Error('Target user is unavailable');
+  }
+
+  const blocked = await prisma.block.findFirst({
+    where: { OR: [{ blockerUserId: fromUserId, blockedUserId: targetUserId }, { blockerUserId: targetUserId, blockedUserId: fromUserId }] },
+  });
+  if (blocked) throw new Error('Interaction is unavailable');
+}
+
 export async function recordLike(fromUserId: string, toUserId: string) {
   if (fromUserId === toUserId) {
     throw new Error('Self-like is not allowed');
   }
 
-  const target = await prisma.user.findUnique({
-    where: { id: toUserId },
-    include: { profile: true },
-  });
-
-  if (!target || target.status !== 'active' || !target.profile || target.profile.discoverability === 'hidden') {
-    throw new Error('Target user is unavailable');
-  }
-
-  const blocked = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerUserId: fromUserId, blockedUserId: toUserId },
-        { blockerUserId: toUserId, blockedUserId: fromUserId },
-      ],
-    },
-  });
-
-  if (blocked) {
-    throw new Error('Interaction is unavailable');
-  }
+  await assertInteractionAllowed(fromUserId, toUserId);
 
   const existing = await prisma.likeRecord.findUnique({
     where: {
@@ -95,27 +96,7 @@ export async function recordPass(fromUserId: string, toUserId: string) {
     throw new Error('Self-pass is not allowed');
   }
 
-  const target = await prisma.user.findUnique({
-    where: { id: toUserId },
-    include: { profile: true },
-  });
-
-  if (!target || target.status !== 'active' || !target.profile || target.profile.discoverability === 'hidden') {
-    throw new Error('Target user is unavailable');
-  }
-
-  const blocked = await prisma.block.findFirst({
-    where: {
-      OR: [
-        { blockerUserId: fromUserId, blockedUserId: toUserId },
-        { blockerUserId: toUserId, blockedUserId: fromUserId },
-      ],
-    },
-  });
-
-  if (blocked) {
-    throw new Error('Interaction is unavailable');
-  }
+  await assertInteractionAllowed(fromUserId, toUserId);
 
   return prisma.passRecord.upsert({
     where: {

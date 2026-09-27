@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { getSessionUserIdFromRequest } from '../auth/auth.service';
 import { createMessageForMatch, getActiveMatchForUser } from './chat.service';
+import { sendMessageSchema } from './chat.validators';
 
 type SocketLike = { send: (payload: string) => void; close: () => void; on: (event: string, handler: (value?: unknown) => void) => void };
 type RequestLike = { cookies?: Record<string, string | undefined> };
@@ -24,14 +25,17 @@ export async function realtimeRoutes(app: FastifyInstance) {
     broadcast(matchId, { type: 'presence', online: true });
     socket.on('message', async (raw: unknown) => {
       try {
+        await getActiveMatchForUser(matchId, userId);
         const event = JSON.parse(String(raw)) as { type?: string; body?: string; clientMessageId?: string };
         if (event.type === 'typing') { broadcast(matchId, { type: 'typing', userId }); return; }
         if (event.type === 'stop_typing') { broadcast(matchId, { type: 'stop_typing', userId }); return; }
-        if (event.type === 'message' && event.body && event.clientMessageId) {
-          const message = await createMessageForMatch(matchId, userId, event.body.trim(), event.clientMessageId);
+        if (event.type === 'message') {
+          const parsed = sendMessageSchema.safeParse({ matchId, body: event.body, clientMessageId: event.clientMessageId });
+          if (!parsed.success) { socket.send(JSON.stringify({ type: 'error', message: 'Invalid message.' })); return; }
+          const message = await createMessageForMatch(matchId, userId, parsed.data.body, parsed.data.clientMessageId);
           broadcast(matchId, { type: 'message', message });
         }
-      } catch { socket.send(JSON.stringify({ type: 'error', message: 'Unable to process that event.' })); }
+      } catch { socket.send(JSON.stringify({ type: 'error', message: 'This conversation is no longer available.' })); socket.close(); }
     });
     socket.on('close', () => { members.delete(socket as SocketLike); if (members.size === 0) rooms.delete(matchId); broadcast(matchId, { type: 'presence', online: false }); });
   });

@@ -3,7 +3,9 @@ import type { FastifyInstance } from 'fastify';
 import { successResponse, errorResponse } from '../../lib/api-response';
 import { prisma } from '../../lib/prisma';
 import { recordLike, recordPass } from './matching.service';
+import { getVisibleMatchUserIds } from './match-visibility';
 import { getSessionUserIdFromRequest } from '../auth/auth.service';
+import { toPublicProfile } from '../profiles/public-profile';
 import { z } from 'zod';
 
 const interactionSchema = z.object({ targetUserId: z.string().uuid() });
@@ -36,25 +38,36 @@ export async function matchingRoutes(app: FastifyInstance) {
     });
 
     const otherUserIds = rows.map((row) => row.userAId === userId ? row.userBId : row.userAId);
+    const visibleUserIds = await getVisibleMatchUserIds(userId, otherUserIds);
+    const visibleRows = rows.filter((row) => visibleUserIds.has(row.userAId === userId ? row.userBId : row.userAId));
+    const visibleOtherUserIds = visibleRows.map((row) => row.userAId === userId ? row.userBId : row.userAId);
     const profiles = await prisma.profile.findMany({
-      where: { userId: { in: otherUserIds } },
+      where: { userId: { in: visibleOtherUserIds } },
       select: {
         userId: true,
+        id: true,
         displayName: true,
+        age: true,
+        academicYear: true,
+        gender: true,
+        bio: true,
         profilePhotoUrl: true,
+        interests: true,
+        privacySettings: true,
+        college: { select: { id: true, name: true } },
         course: { select: { name: true } },
         semester: { select: { name: true } },
       },
     });
     const profileByUserId = new Map(profiles.map((profile) => [profile.userId, profile]));
 
-    return successResponse(rows.flatMap((row) => {
+    return successResponse(visibleRows.flatMap((row) => {
       const otherUserId = row.userAId === userId ? row.userBId : row.userAId;
       const profile = profileByUserId.get(otherUserId);
       return profile ? [{
         id: row.id,
         createdAt: row.createdAt,
-        profile,
+        profile: toPublicProfile(profile),
       }] : [];
     }));
   });
