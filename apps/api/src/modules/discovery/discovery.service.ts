@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma';
+import { isProfileComplete } from '../profiles/profile-completeness';
 
 export type DiscoveryCursor = string | null;
 
@@ -9,7 +10,12 @@ export type DiscoveryEligibility = {
   displayName: string;
   collegeId: string | null;
   courseId: string | null;
-  semesterId: string | null;
+  academicYear: number | null;
+  age: number | null;
+  gender: string | null;
+  interestedIn: string | null;
+  lookingFor: string | null;
+  interests: string[];
 };
 
 export function isDiscoveryProfileEligible(profile: DiscoveryEligibility, currentUserId: string, excludedUserIds: Set<string>) {
@@ -17,10 +23,7 @@ export function isDiscoveryProfileEligible(profile: DiscoveryEligibility, curren
     && !excludedUserIds.has(profile.userId)
     && profile.userStatus === 'active'
     && profile.discoverability !== 'hidden'
-    && profile.displayName.trim().length > 0
-    && profile.collegeId !== null
-    && profile.courseId !== null
-    && profile.semesterId !== null;
+    && isProfileComplete(profile);
 }
 
 export async function getDiscoveryProfiles(userId: string, cursor: DiscoveryCursor, limit: number) {
@@ -88,7 +91,12 @@ export async function getDiscoveryProfiles(userId: string, cursor: DiscoveryCurs
       displayName: { not: '' },
       collegeId: { not: null },
       courseId: { not: null },
-      semesterId: { not: null },
+      academicYear: { not: null },
+      age: { gte: 18 },
+      gender: { not: null },
+      interestedIn: { not: null },
+      lookingFor: { not: null },
+      interests: { isEmpty: false },
       ...(currentProfile?.collegeId ? { collegeId: currentProfile.collegeId } : {}),
       ...(currentProfile?.courseId ? { courseId: currentProfile.courseId } : {}),
       ...(currentProfile?.semesterId ? { semesterId: currentProfile.semesterId } : {}),

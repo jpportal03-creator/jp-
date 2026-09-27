@@ -4,6 +4,7 @@ import { successResponse, errorResponse } from '../../lib/api-response';
 import { prisma } from '../../lib/prisma';
 import { getDiscoveryProfiles } from './discovery.service';
 import { getSessionUserIdFromRequest } from '../auth/auth.service';
+import { isProfileComplete } from '../profiles/profile-completeness';
 
 const makeQueryNumber = (value: string | undefined, fallback: number) => {
   const parsed = Number(value ?? fallback);
@@ -21,6 +22,11 @@ export async function discoveryRoutes(app: FastifyInstance) {
     const dbUser = await prisma.user.findUnique({ where: { id: userId } });
     if (!dbUser || dbUser.status !== 'active') {
       return reply.code(403).send(errorResponse('FORBIDDEN', 'Forbidden'));
+    }
+
+    const profile = await prisma.profile.findUnique({ where: { userId } });
+    if (!isProfileComplete(profile)) {
+      return reply.code(403).send(errorResponse('PROFILE_SETUP_REQUIRED', 'Complete profile setup before using Discovery'));
     }
   });
 

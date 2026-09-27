@@ -1,4 +1,5 @@
 import { prisma } from '../../lib/prisma';
+import type { ProfileSetupInput } from './profile.validators';
 
 export async function getProfileByUserId(userId: string) {
   return prisma.profile.findUnique({
@@ -11,16 +12,32 @@ export async function getProfileByUserId(userId: string) {
   });
 }
 
-export async function createOrUpdateProfile(userId: string, data: {
-  displayName: string;
-  bio?: string | null;
-  gender?: 'woman' | 'man' | 'non_binary' | 'prefer_not_to_say';
-  collegeId?: string | null;
-  courseId?: string | null;
-  semesterId?: string | null;
-  interests?: string[];
-  discoverability?: 'discoverable' | 'hidden' | 'incognito';
-}) {
+export async function getProfileSetupOptions() {
+  const colleges = await prisma.college.findMany({
+    where: { active: true },
+    select: {
+      id: true,
+      name: true,
+      courses: {
+        where: { active: true },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  return { colleges, academicYears: [1, 2, 3, 4] };
+}
+
+export async function createOrUpdateProfile(userId: string, data: ProfileSetupInput) {
+  const [college, course] = await Promise.all([
+    prisma.college.findFirst({ where: { id: data.collegeId, active: true }, select: { id: true } }),
+    prisma.course.findFirst({ where: { id: data.courseId, collegeId: data.collegeId, active: true }, select: { id: true } }),
+  ]);
+
+  if (!college || !course) throw new Error('Invalid profile college or course');
+
   const existing = await prisma.profile.findUnique({ where: { userId } });
 
   if (existing) {
@@ -29,12 +46,17 @@ export async function createOrUpdateProfile(userId: string, data: {
       data: {
         displayName: data.displayName,
         bio: data.bio ?? existing.bio,
-        gender: data.gender ?? existing.gender,
-        collegeId: data.collegeId ?? existing.collegeId,
-        courseId: data.courseId ?? existing.courseId,
+        age: data.age,
+        academicYear: data.academicYear,
+        gender: data.gender,
+        interestedIn: data.interestedIn,
+        lookingFor: data.lookingFor,
+        collegeId: data.collegeId,
+        courseId: data.courseId,
         semesterId: data.semesterId ?? existing.semesterId,
         discoverability: data.discoverability ?? existing.discoverability,
-        interests: data.interests ?? existing.interests,
+        interests: data.interests,
+        profilePhotoUrl: data.profilePhotoUrl || null,
       },
     });
   }
@@ -44,12 +66,17 @@ export async function createOrUpdateProfile(userId: string, data: {
       userId,
       displayName: data.displayName,
       bio: data.bio,
+      age: data.age,
+      academicYear: data.academicYear,
       gender: data.gender,
+      interestedIn: data.interestedIn,
+      lookingFor: data.lookingFor,
       collegeId: data.collegeId,
       courseId: data.courseId,
       semesterId: data.semesterId,
       discoverability: data.discoverability ?? 'discoverable',
-      interests: data.interests ?? [],
+      interests: data.interests,
+      profilePhotoUrl: data.profilePhotoUrl || null,
     },
   });
 }

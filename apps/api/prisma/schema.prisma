@@ -33,6 +33,21 @@ enum Gender {
   prefer_not_to_say
 }
 
+enum InterestedIn {
+  men
+  women
+  everyone
+}
+
+enum LookingFor {
+  dating
+  relationship
+  casual_dating
+  hookup
+  friendship
+  open_to_see_where_it_goes
+}
+
 enum ReportCategory {
   harassment
   spam
@@ -139,7 +154,11 @@ model Profile {
   course          Course?         @relation(fields: [courseId], references: [id])
   semesterId      String?         @db.Uuid
   semester        Semester?       @relation(fields: [semesterId], references: [id])
+  age             Int?
+  academicYear    Int?
   gender          Gender?
+  interestedIn    InterestedIn?
+  lookingFor      LookingFor?
   bio             String?
   profilePhotoUrl String?
   interests       String[]

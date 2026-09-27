@@ -33,7 +33,14 @@ export default function DiscoverPage() {
     try {
       const query = nextCursor ? `?cursor=${encodeURIComponent(nextCursor)}&limit=10` : '?limit=10';
       const response = await fetch(`${apiUrl}/api/v1/discovery${query}`, { credentials: 'include' });
-      if (!response.ok) throw new Error('Unable to load discovery');
+      if (!response.ok) {
+        const failure = await response.json() as { error?: { code?: string } };
+        if (failure.error?.code === 'PROFILE_SETUP_REQUIRED') {
+          window.location.href = '/profile/setup';
+          return;
+        }
+        throw new Error('Unable to load discovery');
+      }
       const body = await response.json() as { data: DiscoveryResponse };
       setProfiles((current) => nextCursor ? [...current, ...body.data.items] : body.data.items);
       setCursor(body.data.nextCursor);

@@ -4,7 +4,8 @@ import { Prisma } from '@prisma/client';
 import { successResponse, errorResponse } from '../../lib/api-response';
 import { prisma } from '../../lib/prisma';
 import { createProfileSchema, updatePrivacySchema } from './profile.validators';
-import { createOrUpdateProfile, getProfileByUserId } from './profile.service';
+import { createOrUpdateProfile, getProfileByUserId, getProfileSetupOptions } from './profile.service';
+import { isProfileComplete } from './profile-completeness';
 import { getSessionUserIdFromRequest } from '../auth/auth.service';
 
 export async function profileRoutes(app: FastifyInstance) {
@@ -27,7 +28,11 @@ export async function profileRoutes(app: FastifyInstance) {
     }
 
     const profile = await getProfileByUserId(userId);
-    return successResponse(profile);
+    return successResponse({ profile, complete: isProfileComplete(profile) });
+  });
+
+  app.get('/api/v1/profile/options', async () => {
+    return successResponse(await getProfileSetupOptions());
   });
 
   app.post('/api/v1/profile', async (request, reply) => {
@@ -43,9 +48,18 @@ export async function profileRoutes(app: FastifyInstance) {
       return errorResponse('INVALID_REQUEST', 'Invalid profile payload');
     }
 
-    const profile = await createOrUpdateProfile(userId, parsed.data);
+    let profile;
+    try {
+      profile = await createOrUpdateProfile(userId, parsed.data);
+    } catch (error) {
+      if ((error as Error).message === 'Invalid profile college or course') {
+        reply.code(400);
+        return errorResponse('INVALID_PROFILE_SELECTION', 'Choose an active college and a course offered by that college');
+      }
+      throw error;
+    }
 
-    return successResponse(profile);
+    return successResponse({ profile, complete: isProfileComplete(profile) });
   });
 
   app.patch('/api/v1/profile/privacy', async (request, reply) => {
