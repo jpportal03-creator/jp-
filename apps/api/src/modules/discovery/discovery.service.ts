@@ -5,7 +5,6 @@ export type DiscoveryCursor = string | null;
 export type DiscoveryEligibility = {
   userId: string;
   userStatus: 'active' | 'pending_verification' | 'suspended' | 'deleted';
-  emailVerifiedAt: Date | null;
   discoverability: 'discoverable' | 'hidden' | 'incognito';
   displayName: string;
   collegeId: string | null;
@@ -17,7 +16,6 @@ export function isDiscoveryProfileEligible(profile: DiscoveryEligibility, curren
   return profile.userId !== currentUserId
     && !excludedUserIds.has(profile.userId)
     && profile.userStatus === 'active'
-    && profile.emailVerifiedAt !== null
     && profile.discoverability !== 'hidden'
     && profile.displayName.trim().length > 0
     && profile.collegeId !== null
@@ -85,7 +83,6 @@ export async function getDiscoveryProfiles(userId: string, cursor: DiscoveryCurs
       userId: { notIn: [...excludedUserIds] },
       user: {
         status: 'active',
-        emailVerifiedAt: { not: null },
       },
       discoverability: { not: 'hidden' },
       displayName: { not: '' },

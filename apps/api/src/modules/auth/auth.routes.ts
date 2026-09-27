@@ -1,11 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 
 import { successResponse, errorResponse } from '../../lib/api-response';
-import { logger } from '../../lib/logger';
 import { prisma } from '../../lib/prisma';
 import { ensureDomainMatchesCollege, createUserWithEmail, verifyPassword, getSessionUserIdFromRequest, setSessionCookie, clearSessionCookie } from './auth.service';
-import { registerSchema, loginSchema, verifyEmailSchema } from './auth.validators';
-import { createEmailVerification, sendVerificationEmail, verifyEmailCode } from './email-verification.service';
+import { registerSchema, loginSchema } from './auth.validators';
 
 export async function authRoutes(app: FastifyInstance) {
   app.get('/api/v1/auth/session', async (request) => {
@@ -24,7 +22,6 @@ export async function authRoutes(app: FastifyInstance) {
         id: user.id,
         email: user.email,
         status: user.status,
-        emailVerified: Boolean(user.emailVerifiedAt),
       },
     });
   });
@@ -52,20 +49,10 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const user = await createUserWithEmail(email, password);
-    const { code } = await createEmailVerification(email);
-    try {
-      await sendVerificationEmail(email, code);
-    } catch (error) {
-      logger.error({ err: error, event: 'verification_email_send_failed' }, 'Registration email delivery failed');
-      reply.code(503);
-      return errorResponse('EMAIL_DELIVERY_FAILED', 'We could not send the verification email. Please try again later.');
-    }
 
     return successResponse({
       userId: user.id,
       status: user.status,
-      emailVerified: false,
-      requiresEmailVerification: true,
     });
   });
 
@@ -103,7 +90,6 @@ export async function authRoutes(app: FastifyInstance) {
         id: user.id,
         email: user.email,
         status: user.status,
-        emailVerified: Boolean(user.emailVerifiedAt),
       },
     });
   });
@@ -113,39 +99,4 @@ export async function authRoutes(app: FastifyInstance) {
     return successResponse({ loggedOut: true });
   });
 
-  app.post('/api/v1/auth/verify-email', { config: { rateLimit: { max: 10, timeWindow: '15 minutes' } } }, async (request, reply) => {
-    const parsed = verifyEmailSchema.safeParse(request.body);
-
-    if (!parsed.success) {
-      reply.code(400);
-      return errorResponse('INVALID_REQUEST', 'Invalid verification data');
-    }
-
-    const { email, code } = parsed.data;
-
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      reply.code(404);
-      return errorResponse('USER_NOT_FOUND', 'User not found');
-    }
-
-    const valid = await verifyEmailCode(email, code);
-    if (!valid) {
-      reply.code(400);
-      return errorResponse('INVALID_VERIFICATION_CODE', 'Invalid or expired verification code');
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerifiedAt: new Date(),
-        status: 'active',
-      },
-    });
-
-    return successResponse({
-      verified: true,
-      userId: user.id,
-    });
-  });
 }

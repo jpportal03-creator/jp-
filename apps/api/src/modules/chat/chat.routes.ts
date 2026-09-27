@@ -14,7 +14,7 @@ export async function chatRoutes(app: FastifyInstance) {
     }
 
     const dbUser = await prisma.user.findUnique({ where: { id: userId } });
-    if (!dbUser || dbUser.status !== 'active' || !dbUser.emailVerifiedAt) {
+    if (!dbUser || dbUser.status !== 'active') {
       return reply.code(403).send(errorResponse('FORBIDDEN', 'Forbidden'));
     }
   });

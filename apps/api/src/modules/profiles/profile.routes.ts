@@ -15,7 +15,7 @@ export async function profileRoutes(app: FastifyInstance) {
     }
 
     const dbUser = await prisma.user.findUnique({ where: { id: userId } });
-    if (!dbUser || dbUser.status === 'suspended' || dbUser.status === 'deleted' || !dbUser.emailVerifiedAt) {
+    if (!dbUser || dbUser.status === 'suspended' || dbUser.status === 'deleted') {
       return reply.code(403).send(errorResponse('FORBIDDEN', 'Forbidden'));
     }
   });

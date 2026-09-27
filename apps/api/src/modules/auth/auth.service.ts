@@ -30,7 +30,7 @@ export async function createUserWithEmail(email: string, password: string) {
     data: {
       email,
       passwordHash,
-      status: 'pending_verification',
+      status: 'active',
     },
   });
 

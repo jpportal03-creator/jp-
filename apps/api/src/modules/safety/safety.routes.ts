@@ -16,7 +16,7 @@ async function getAuthenticatedUserId(request: { cookies?: Record<string, string
   const userId = await getSessionUserIdFromRequest(request);
   if (!userId) return null;
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  return user?.status === 'active' && user.emailVerifiedAt ? userId : null;
+  return user?.status === 'active' ? userId : null;
 }
 
 export async function safetyRoutes(app: FastifyInstance) {

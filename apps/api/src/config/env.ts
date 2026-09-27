@@ -64,8 +64,6 @@ export function createEnv(source: EnvSource = process.env) {
     REDIS_URL: source.REDIS_URL ?? 'redis://localhost:6379',
     ADMIN_EMAIL: source.ADMIN_EMAIL ?? 'admin@localhost',
     ADMIN_PASSWORD: source.ADMIN_PASSWORD ?? 'change-me',
-    EMAIL_PROVIDER_API_KEY: source.EMAIL_PROVIDER_API_KEY ?? '',
-    EMAIL_FROM: source.EMAIL_FROM ?? '',
     WEB_ORIGINS: resolveWebOrigins(
       [source.WEB_ORIGINS, isProduction ? productionFrontendOrigin : undefined].filter(Boolean).join(','),
       appUrl,

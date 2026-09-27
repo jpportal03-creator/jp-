@@ -5,7 +5,6 @@ import { isDiscoveryProfileEligible } from './discovery.service';
 const eligible = {
   userId: 'profile-user',
   userStatus: 'active' as const,
-  emailVerifiedAt: new Date(),
   discoverability: 'discoverable' as const,
   displayName: 'A student',
   collegeId: 'college',
@@ -14,10 +13,9 @@ const eligible = {
 };
 
 describe('discovery eligibility', () => {
-  it('allows only active, verified, complete, visible profiles', () => {
+  it('allows active, complete, visible profiles without email verification', () => {
     expect(isDiscoveryProfileEligible(eligible, 'current-user', new Set())).toBe(true);
     expect(isDiscoveryProfileEligible({ ...eligible, userStatus: 'suspended' }, 'current-user', new Set())).toBe(false);
-    expect(isDiscoveryProfileEligible({ ...eligible, emailVerifiedAt: null }, 'current-user', new Set())).toBe(false);
     expect(isDiscoveryProfileEligible({ ...eligible, discoverability: 'hidden' }, 'current-user', new Set())).toBe(false);
     expect(isDiscoveryProfileEligible({ ...eligible, courseId: null }, 'current-user', new Set())).toBe(false);
   });

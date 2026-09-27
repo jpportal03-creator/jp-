@@ -20,7 +20,7 @@ export async function recordLike(fromUserId: string, toUserId: string) {
     include: { profile: true },
   });
 
-  if (!target || target.status !== 'active' || !target.emailVerifiedAt || !target.profile || target.profile.discoverability === 'hidden') {
+  if (!target || target.status !== 'active' || !target.profile || target.profile.discoverability === 'hidden') {
     throw new Error('Target user is unavailable');
   }
 
@@ -100,7 +100,7 @@ export async function recordPass(fromUserId: string, toUserId: string) {
     include: { profile: true },
   });
 
-  if (!target || target.status !== 'active' || !target.emailVerifiedAt || !target.profile || target.profile.discoverability === 'hidden') {
+  if (!target || target.status !== 'active' || !target.profile || target.profile.discoverability === 'hidden') {
     throw new Error('Target user is unavailable');
   }
 

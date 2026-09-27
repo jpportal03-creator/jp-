@@ -5,8 +5,8 @@ export async function getActiveMatchForUser(matchId: string, userId: string) {
   if (!match) throw new Error('Match unavailable');
   const blocked = await prisma.block.findFirst({ where: { OR: [{ blockerUserId: match.userAId, blockedUserId: match.userBId }, { blockerUserId: match.userBId, blockedUserId: match.userAId }] } });
   if (blocked) throw new Error('Match unavailable');
-  const users = await prisma.user.findMany({ where: { id: { in: [match.userAId, match.userBId] } }, select: { status: true, emailVerifiedAt: true } });
-  if (users.length !== 2 || users.some((user) => user.status !== 'active' || !user.emailVerifiedAt)) throw new Error('Match unavailable');
+  const users = await prisma.user.findMany({ where: { id: { in: [match.userAId, match.userBId] } }, select: { status: true } });
+  if (users.length !== 2 || users.some((user) => user.status !== 'active')) throw new Error('Match unavailable');
   return match;
 }
 

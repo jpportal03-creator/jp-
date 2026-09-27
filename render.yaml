@@ -32,10 +32,6 @@ services:
         sync: false
       - key: WEB_ORIGINS
         value: https://jp-dating-frontend.onrender.com
-      - key: EMAIL_PROVIDER_API_KEY
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
 
   - type: web
     name: jp-dating-web
@@ -48,6 +44,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        sync: false
+        value: https://jp-dating-api.onrender.com
       - key: NEXT_PUBLIC_SITE_URL
-        sync: false
+        value: https://jp-dating-frontend.onrender.com

@@ -57,7 +57,7 @@ model User {
   email                 String          @unique
   passwordHash          String?
   role                  UserRole        @default(student)
-  status                AccountStatus   @default(pending_verification)
+  status                AccountStatus   @default(active)
   emailVerifiedAt       DateTime?
   collegeId             String?         @db.Uuid
   college               College?        @relation(fields: [collegeId], references: [id])

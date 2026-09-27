@@ -13,8 +13,8 @@ const planUpdateSchema = z.object({ active: z.boolean().optional(), priceInPaise
 async function authenticatedUser(request: { cookies?: Record<string, string | undefined> }) {
   const userId = await getSessionUserIdFromRequest(request);
   if (!userId) return null;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, status: true, emailVerifiedAt: true, role: true } });
-  return user?.status === 'active' && user.emailVerifiedAt ? user : null;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, status: true, role: true } });
+  return user?.status === 'active' ? user : null;
 }
 
 export async function paymentRoutes(app: FastifyInstance) {
